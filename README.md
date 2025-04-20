@@ -1,2 +1,2 @@
 # FTD-lua
-these are some cool lua script to control missiles in ftd using APN (Augmented Proportional Navigation)
+these are some cool lua script for everything, mostly weapon guidance and tests

@@ -3,7 +3,7 @@
 sensor_pos = {}
 sensor_vel = {}
 time = {}
-deltaT = 0
+-- deltaT = 0
 
 average_vel = 3
 last_vel = Vector3(0, 0, 0)
@@ -23,6 +23,7 @@ function Update(I)
     I:ClearLogs()
     target = I:GetTargetInfo(2, 0)
     target_pos = target.Position
+    target_aim_pos = target.AimPointPosition
     target_vel, target_accel = getAccurateTargetInfo(target_pos)
     target_speed = target_vel.magnitude
 
@@ -38,6 +39,7 @@ function Update(I)
         I:Log("Target Velocity: " .. target_vel.x .. ", " .. target_vel.y .. ", " .. target_vel.z)
         I:Log("Target Speed: " .. Mathf.Sqrt(Vector3.Dot(target_vel, target_vel)) .. " m/s")
         I:Log("Target acceleration: " .. target_accel.x .. ", " .. target_accel.y .. ", " .. target_accel.z)
+        I:Log("DeltaT: " .. deltaT)
         I:Log("Tracking!")
     end
 
@@ -104,7 +106,7 @@ function getAverageVelocity()
     return vel_vec
 end
 
-function getAccurateTargetInfo(target_vel)
+function getAccurateTargetInfo(target_pos)
     if #sensor_pos < 2 then
         table.insert(sensor_pos, target_pos)
         table.insert(time, Game:GetTime())
@@ -112,7 +114,11 @@ function getAccurateTargetInfo(target_vel)
 
     if #sensor_pos == 2 then
         -- Calculate time difference
-        deltaT = time[2] - time[1]
+        -- so some how deltaT between tick are detemind by 
+        -- how fast or slow your game is, i.e
+        -- if you run the game at slow mo some how the next tick has 0 deltaT
+        -- embrace the jank ig... 
+        deltaT = (time[2] + 0.002) - (time[1] + 0.0000001)
 
         -- Calculate position difference vector using vecDiff
         local pos_diff = vecDiff(sensor_pos[2], sensor_pos[1])
@@ -135,7 +141,7 @@ function getAccurateTargetInfo(target_vel)
         table.remove(sensor_pos, 1)
         table.remove(time, 1)
     end
-    return last_vel, target_accel
+    return current_vel, target_accel
 end
 
 function vecDiff(a, b)

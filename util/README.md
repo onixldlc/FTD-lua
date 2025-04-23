@@ -6,3 +6,4 @@ these are some of the utility script i find interesting or useful
 | :----- | :----: |
 | script-velocity.lua | a script to compare velocity from the sensor it self, vs the one we derived our self |
 | script-template.lua | a template script for easy development (it splits between function that should run every tick vs every second) |
+| script-cram_tracker.lua | a script that would track cram shell using parallax between 2 ciws controller|

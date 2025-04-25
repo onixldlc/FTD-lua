@@ -5,8 +5,13 @@ weapons = {}
 weapons_buff = {}
 weapons_averaged = {}
 weapons_averaging = 5
-weapons_master = {1,2}
-weapons_slave = {4,5,6}
+weapons_master = {}
+weapons_slave = {}
+
+projectile_buff={}
+projectile_history = 10
+current_projectile_pos = Vector3(0,0,0)
+active_projectile_pos = Vector3(0,0,0)
 
 -- time variable
 deltaT = 0
@@ -14,6 +19,7 @@ currT = 0
 prevT = 0
 currS = 0
 prevS = 0
+secnd = 0
 
 -- global I variable
 Game=nil
@@ -49,22 +55,26 @@ function main()
     local target, rng = paralax_to_range(w1.pos, w2.pos, w1.direction, w2.direction)
     if target then
         Game:Log(string.format("Est. target @ %.2f, %.2f, %.2f (range %.1f)", target.x, target.y, target.z, rng))
-
+        active_projectile_pos = target
         for i, id in ipairs(weapons_slave) do
-            instruct_slave(weapons[id], Vector3(0,0,0), 0)
+            local weapon = weapons[id]
+            instruct_slave(weapon, target, 0)
         end
     end
+    
 end
 
 function position_to_direction(pos1, pos2)
     local direction = pos2 - pos1
-    return direction.normalized
+    return direction
 end
 
 function instruct_slave(weapon, target, slot)
     -- convert the target to a vector3 position to direction
-    target_direction = position_to_direction(weapon.pos, target)
+    local target_direction = position_to_direction(weapon.pos, target)
+    Game:Log("Weapon [" .. weapon.id .."] direction: " .. target_direction.x .. ", " .. target_direction.y .. ", " .. target_direction.z)
     Game:AimWeaponInDirection(weapon.id, target_direction.x,target_direction.y,target_direction.z, slot)
+    Game:FireWeapon(weapon.id, 0)
 end
 -- ================LOGICS ENDS================
 
@@ -118,6 +128,9 @@ function log_track_weapon()
         Game:Log("Weapon " .. id .. " averaged pos: " .. weapons_averaged[id].pos.x .. ", " .. weapons_averaged[id].pos.y .. ", " .. weapons_averaged[id].pos.z)
     end
     return 0
+end
+function update_projectile_pos()
+    current_projectile_pos = active_projectile_pos
 end
 -- ================UPDATE ENDS================
 

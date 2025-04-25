@@ -1,11 +1,12 @@
--- projectile tracker
+-- platform-laser position-tracker
 
 -- additional variables
 weapons = {}
 weapons_buff = {}
 weapons_averaged = {}
-weapons_to_track = {6, 5, 7} -- ciws used to track ordinance
-weapons_averaging = 5 -- amount of weapon history before averaging
+weapons_averaging = 5
+weapons_master = {1,2}
+weapons_slave = {4,5,6}
 
 -- time variable
 deltaT = 0
@@ -29,47 +30,41 @@ function main()
         return 1
     end
 
-    local w1 = weapons_averaged[5]
-    local w2 = weapons_averaged[7]
+    if #weapons_master < 2 then
+        for i, weapon in ipairs(weapons) do
+            Game:Log("")
+            Game:Log(string.format("- type: %s", weapon.type))
+            Game:Log(string.format("- slot_mask: %s", weapon.slot_mask))
+            Game:Log(string.format("- position: x=%s, y=%s, z=%s", weapon.pos.x, weapon.pos.y, weapon.pos.z))
+            Game:Log(string.format("- direction: %s, %s, %s", weapon.direction.x, weapon.direction.y, weapon.direction.z))
+            Game:Log(string.format("Weapon %d:", weapon.id))
+        end
+        Game:Log("Listing weapons:")
+        Game:Log("Not enough weapons to track")
+        return 1
+    end
+
+    local w1 = weapons_averaged[weapons_master[1]]
+    local w2 = weapons_averaged[weapons_master[2]]
     local target, rng = paralax_to_range(w1.pos, w2.pos, w1.direction, w2.direction)
     if target then
         Game:Log(string.format("Est. target @ %.2f, %.2f, %.2f (range %.1f)", target.x, target.y, target.z, rng))
+
+        for i, id in ipairs(weapons_slave) do
+            instruct_slave(weapons[id], Vector3(0,0,0), 0)
+        end
     end
 end
 
-function paralax_to_range(pos1, pos2, dir1, dir2)
-    -- vector from obs1 to obs2
-    local p21 = pos2 - pos1
+function position_to_direction(pos1, pos2)
+    local direction = pos2 - pos1
+    return direction.normalized
+end
 
-    -- assume dir1, dir2 are normalized
-    local d1d2 = Vector3.Dot(dir1, dir2)
-    local denom = 1 - d1d2 * d1d2
-    Game:Log("Denom: " .. denom)
-
-    -- lines nearly parallel → unreliable
-    -- if math.abs(denom) < 1e-6 then
-    --     Game:Log("Lines are nearly parallel")
-    --     return nil, nil
-    -- end
-
-    -- project p21 onto each direction
-    local p21d1 = Vector3.Dot(p21, dir1)
-    local p21d2 = Vector3.Dot(p21, dir2)
-
-    -- distances along each line to closest approach
-    local t1 = (p21d1 - p21d2 * d1d2) / denom
-    local t2 = (p21d1 * d1d2 - p21d2) / denom
-
-    -- closest points on each LOS
-    local closest1 = pos1 + dir1 * t1
-    local closest2 = pos2 + dir2 * t2
-
-    -- midpoint as estimated target
-    local target = (closest1 + closest2) / 2
-
-    -- range from observer 1
-    local range = (target - pos1).magnitude
-    return target, range
+function instruct_slave(weapon, target, slot)
+    -- convert the target to a vector3 position to direction
+    target_direction = position_to_direction(weapon.pos, target)
+    Game:AimWeaponInDirection(weapon.id, target_direction.x,target_direction.y,target_direction.z, slot)
 end
 -- ================LOGICS ENDS================
 
@@ -99,8 +94,8 @@ function log_track_weapon()
         return 1
     end
 
-    -- loop over weapons_to_track table
-    for i, id in ipairs(weapons_to_track) do
+    -- loop over weapons_master table
+    for i, id in ipairs(weapons_master) do
         -- then average out between each entry in the weapons_buff table
         local avg_pos = Vector3(0, 0, 0)
         local avg_dir = Vector3(0, 0, 0)
@@ -213,5 +208,40 @@ function newOrdinance(id, pos, vel, time)
         time = 0,
     }
     return ordinance_obj
+end
+
+function paralax_to_range(pos1, pos2, dir1, dir2)
+    -- vector from obs1 to obs2
+    local p21 = pos2 - pos1
+
+    -- assume dir1, dir2 are normalized
+    local d1d2 = Vector3.Dot(dir1, dir2)
+    local denom = 1 - d1d2 * d1d2
+    Game:Log("Denom: " .. denom)
+
+    -- lines nearly parallel → unreliable
+    if math.abs(denom) < 1e-6 then
+        Game:Log("Lines are nearly parallel")
+        return nil, nil
+    end
+
+    -- project p21 onto each direction
+    local p21d1 = Vector3.Dot(p21, dir1)
+    local p21d2 = Vector3.Dot(p21, dir2)
+
+    -- distances along each line to closest approach
+    local t1 = (p21d1 - p21d2 * d1d2) / denom
+    local t2 = (p21d1 * d1d2 - p21d2) / denom
+
+    -- closest points on each LOS
+    local closest1 = pos1 + dir1 * t1
+    local closest2 = pos2 + dir2 * t2
+
+    -- midpoint as estimated target
+    local target = (closest1 + closest2) / 2
+
+    -- range from observer 1
+    local range = (target - pos1).magnitude
+    return target, range
 end
 -- =================UTIL ENDS=================

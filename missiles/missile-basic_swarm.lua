@@ -21,7 +21,7 @@ function Update(I)
     update_time()
     update_target_list()
     update_missile_list()
-    -- update_missile_guidance()
+    update_missile_guidance()
 end
 
 -- ===============runs every ticks================
@@ -50,7 +50,7 @@ function update_target_list()
         target_id = target_info.Id
         target_pos = target_info.Position
         data = { pos = target_pos, info = target_info }
-        table.insert(target_list, { index = target_id, data = data })
+        target_list[target_id] = data
         if(target_info.PlayerTargetChoice) then
             actively_targeted_id = target_id
         end
@@ -62,38 +62,62 @@ function update_target_list()
 end
 
 function update_missile_list()
-    for transceiver_id = 0, I:GetLuaTransceiverCount() - 1 do
-        missile_count = I:GetLuaControlledMissileCount(transceiver_id)
-        if(missile_count == 0) then
-            Game:log("No missile is being fired")
-            return
-        end
+    for transceiver_id = 0, Game:GetLuaTransceiverCount() - 1 do
+        missile_count = Game:GetLuaControlledMissileCount(transceiver_id)
         for missile_id = 0, missile_count - 1 do
-            missile_info = I:GetLuaControlledMissileInfo(transceiver_id, missile_id)
-            missile_uid = missile_info.Id
+            missile_info = Game:GetLuaControlledMissileInfo(transceiver_id, missile_id)
+            missile_uid = "M" .. missile_info.Id
             if(missiles_list[missile_uid] ~= nil) then
                 goto continue
             else
                 missile_pos = missile_info.Position
-                missile_target = target_list[actively_targeted_id]
-                data = { pos = missile_pos, target = missile_target, info = missile_info }
-                table.insert(missiles_list, { index = missile_uid, data = data })
+                missile_target_id = actively_targeted_id
+                data = { target = missile_target_id, info = missile_info }
+                missiles_list[missile_uid] = data
             end
+            ::continue::
         end
     end
+    Game:Log("data dump: " .. dump(missiles_list))
 end 
 
--- function update_missile_guidance()
---     for i, missile in ipairs(missiles_list) do
---         if missile.data.target ~= nil then
---             target_pos = missile.data.target.pos
---             missile_pos = missile.data.pos
---         end
---     end
--- end
+function update_missile_guidance()
+    for transceiver_id = 0, Game:GetLuaTransceiverCount() - 1 do
+        for missile_id = 0, Game:GetLuaControlledMissileCount(transceiver_id) - 1 do
+            missile_info = Game:GetLuaControlledMissileInfo(transceiver_id, missile_id)
+            missile_uid = "M" .. missile_info.Id
+            missile_data = missiles_list[missile_uid]
+
+            target_id = missile_data.target
+            if (target_list[target_id] == nil) then
+                Game:DetonateLuaControlledMissile(transceiver_id, missile_id)
+                goto continue
+            end
+
+            target_pos = target_list[target_id].pos
+            target_x = target_pos.x
+            target_y = target_pos.y
+            target_z = target_pos.z
+
+            Game:SetLuaControlledMissileAimPoint(transceiver_id, missile_id, target_x, target_y, target_z)
+            ::continue::
+        end
+    end
+end
 -- ===============runs every ticks================
 
 
 -- ===============utils================
--- function 
+function dump(o)
+   if type(o) == 'table' then
+      local s = '{ '
+      for k,v in pairs(o) do
+         if type(k) ~= 'number' then s = s .. '['..k..'] = ' end
+         s = s .. dump(v) .. ','
+      end
+      return s .. '} '
+   else
+      return tostring(o)
+   end
+end
 -- ===============utils================

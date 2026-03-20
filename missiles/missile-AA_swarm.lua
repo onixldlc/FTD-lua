@@ -20,6 +20,7 @@ actively_targeted_id = nil
 
 -- velocity estimation settings
 average_vel = 3
+average_turn_rate = 3      -- rolling window size for turn rate smoothing
 
 -- time tracking for HUD (no spam)
 currS = 0
@@ -79,6 +80,7 @@ function update_target_list()
                 prev_smooth_vel = nil,
                 prev_smooth_time = nil,
                 turn_rate = 0,
+                turn_rate_samples = {},
                 turn_axis = Vector3(0, 1, 0),
             }
         end
@@ -104,6 +106,7 @@ function update_target_list()
             prev_smooth_vel = existing.prev_smooth_vel,
             prev_smooth_time = existing.prev_smooth_time,
             turn_rate = existing.turn_rate,
+            turn_rate_samples = existing.turn_rate_samples,
             turn_axis = existing.turn_axis,
         }
 
@@ -398,8 +401,16 @@ function update_target_turn_rate(smooth_vel, state)
     -- turn rate = angle / dt  (rad/s)
     local measured_rate = angle / dt
 
-    -- smooth it: blend 70% old + 30% new to avoid jitter
-    state.turn_rate = state.turn_rate * 0.7 + measured_rate * 0.3
+    -- rolling average — same pattern as velocity smoothing
+    table.insert(state.turn_rate_samples, measured_rate)
+    if #state.turn_rate_samples > average_turn_rate then
+        table.remove(state.turn_rate_samples, 1)
+    end
+    local sum = 0
+    for i = 1, #state.turn_rate_samples do
+        sum = sum + state.turn_rate_samples[i]
+    end
+    state.turn_rate = sum / #state.turn_rate_samples
 
     -- turn axis = cross product of prev_dir × curr_dir (normalized)
     local axis = Vector3.Cross(prev_dir, curr_dir)

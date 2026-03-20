@@ -21,6 +21,7 @@ function Update(I)
     update_time()
     update_target_list()
     update_missile_list()
+    update_missile_guidance()
 end
 
 -- ===============runs every ticks================
@@ -48,7 +49,8 @@ function update_target_list()
         target_info = Game:GetTargetInfo(mainframe, i)
         target_id = target_info.Id
         target_pos = target_info.Position
-        table.insert(target_list, { index = target_id, info = target_info })
+        data = { pos = target_pos, info = target_info }
+        table.insert(target_list, { index = target_id, info = data })
         if(target_info.PlayerTargetChoice) then
             actively_targeted_id = target_id
         end
@@ -71,7 +73,7 @@ function update_missile_list()
             missile_pos = missile_info.Position
             missile_target = target_list[actively_targeted_id]
             missile_uid = missile_info.Id
-            data = { pos = missile_pos, target = missile_target }
+            data = { pos = missile_pos, target = missile_target, info = missile_info }
             table.insert(missiles_list, { index = missile_uid, info = data })
         end
     end

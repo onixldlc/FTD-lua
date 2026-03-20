@@ -21,7 +21,7 @@ function Update(I)
     update_time()
     update_target_list()
     update_missile_list()
-    update_missile_guidance()
+    -- update_missile_guidance()
 end
 
 -- ===============runs every ticks================
@@ -50,7 +50,7 @@ function update_target_list()
         target_id = target_info.Id
         target_pos = target_info.Position
         data = { pos = target_pos, info = target_info }
-        table.insert(target_list, { index = target_id, info = data })
+        table.insert(target_list, { index = target_id, data = data })
         if(target_info.PlayerTargetChoice) then
             actively_targeted_id = target_id
         end
@@ -70,12 +70,30 @@ function update_missile_list()
         end
         for missile_id = 0, missile_count - 1 do
             missile_info = I:GetLuaControlledMissileInfo(transceiver_id, missile_id)
-            missile_pos = missile_info.Position
-            missile_target = target_list[actively_targeted_id]
             missile_uid = missile_info.Id
-            data = { pos = missile_pos, target = missile_target, info = missile_info }
-            table.insert(missiles_list, { index = missile_uid, info = data })
+            if(missiles_list[missile_uid] ~= nil) then
+                goto continue
+            else
+                missile_pos = missile_info.Position
+                missile_target = target_list[actively_targeted_id]
+                data = { pos = missile_pos, target = missile_target, info = missile_info }
+                table.insert(missiles_list, { index = missile_uid, data = data })
+            end
         end
     end
 end 
+
+-- function update_missile_guidance()
+--     for i, missile in ipairs(missiles_list) do
+--         if missile.data.target ~= nil then
+--             target_pos = missile.data.target.pos
+--             missile_pos = missile.data.pos
+--         end
+--     end
+-- end
 -- ===============runs every ticks================
+
+
+-- ===============utils================
+-- function 
+-- ===============utils================

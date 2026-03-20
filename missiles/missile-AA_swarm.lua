@@ -1,7 +1,9 @@
 -- AA swarm missile — multi-target tracker with predictive guidance
 mainframe = 2
 max_missile = 48
-proximity_distance = 1 --meter
+proximity_distance = 5 --meter
+terminal_phase_distance = 100 --meter
+
 
 target_list = {}
 missiles_list = {}
@@ -133,9 +135,18 @@ function update_missile_guidance()
             missile_vel = missile_info.Velocity
 
             intercept_point, t = solve_intercept(target_pos, target_vel, target_accel, missile_pos, missile_vel)
-            check_proximity_fuze(missile_pos, target_pos, transceiver_id, missile_id)
+            local distance = (missile_pos - target_pos).magnitude
 
-            Game:SetLuaControlledMissileAimPoint(transceiver_id, missile_id, intercept_point.x, intercept_point.y, intercept_point.z)
+            if distance <= proximity_distance then
+                Game:DetonateLuaControlledMissile(transceiver_id, missile_id)
+            end
+
+            -- terminal phase check
+            if distance < terminal_phase_distance then
+                Game:SetLuaControlledMissileAimPoint(transceiver_id, missile_id, intercept_point.x, intercept_point.y, intercept_point.z)
+            else
+                Game:SetLuaControlledMissileAimPoint(transceiver_id, missile_id, intercept_point.x, intercept_point.y, intercept_point.z)
+            end
             ::continue::
         end
     end
@@ -208,13 +219,6 @@ function get_acceleration(current_vel, last_vel, sensor_time)
     local ay = (current_vel.y - last_vel.y) / dt
     local az = (current_vel.z - last_vel.z) / dt
     return Vector3(ax, ay, az)
-end
-
-function check_proximity_fuze(missile_pos, target_pos, transceiver_id, missile_id)
-    local distance = (missile_pos - target_pos).magnitude
-    if distance <= proximity_distance then
-        Game:DetonateLuaControlledMissile(transceiver_id, missile_id)
-    end
 end
 -- ===============GUIDANCE ENDS===============
 

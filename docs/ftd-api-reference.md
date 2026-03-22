@@ -212,6 +212,14 @@ The Fleet Awareness API provides scripts basic information about the fleet the c
 | `Flagship` | FriendlyInfo | Information about the flagship of the fleet |
 | `Members` | FriendlyInfo[] | A table of information regarding the fleet's members. **MAY CONTAIN NILS!** |
 
+> ⚠️ **Gotcha — FTD Arrays (LuaArray) are NOT Lua tables.**
+> Arrays returned from the FTD API (like `fleet.Members`) are C# `LuaArray` userdata, not native Lua tables.
+> - `ipairs()` and `pairs()` will **not** work — you'll get `table expected, got userdata`.
+> - `.Count` does **not** exist — you'll get `Can't find property named Count`.
+> - Use the `#` length operator to get the size: `#fleet.Members`.
+> - Indexing behavior (0-based vs 1-based) may vary — **wrap access in `pcall`** if unsure.
+> - `WeaponInfo` fields: `Valid`, `LocalPosition`, `GlobalPosition`, `LocalFirePoint`, `GlobalFirePoint`, `Speed`, `CurrentDirection`, `WeaponType`, `PlayerCurrentlyControllingIt`. Note: `WeaponSlot` and `WeaponSlotMask` do **NOT** exist at runtime despite being listed in some docs.
+
 ---
 
 ## Resources

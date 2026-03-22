@@ -71,3 +71,5 @@ end
 - `DetonateLuaControlledMissile` and `SetLuaControlledMissileAimPoint` require a **Lua receiver ON the missile** to work
 - There is no shared state between scripts on different constructs
 - `dt` is `1/40` seconds per tick (use `I:GetTime()` for actual elapsed time)
+- **FTD arrays (LuaArray) are C# userdata, NOT Lua tables.** `ipairs()`/`pairs()` will error. `.Count` does not exist. Use `#array` for length and numeric `for` loops to iterate. Wrap in `pcall` if unsure about 0-based vs 1-based indexing.
+- **`WeaponInfo` confirmed fields:** `Valid`, `LocalPosition`, `GlobalPosition`, `LocalFirePoint`, `GlobalFirePoint`, `Speed`, `CurrentDirection`, `WeaponType`, `PlayerCurrentlyControllingIt`. **`WeaponSlot` and `WeaponSlotMask` do NOT exist at runtime** despite appearing in some documentation.
